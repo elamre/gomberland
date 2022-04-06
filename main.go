@@ -3,7 +3,11 @@ package main
 import (
 	"github.com/elamre/gomberman/net/client"
 	"github.com/elamre/gomberman/net/server"
+	"github.com/elamre/gomberman/netcode/core"
+	"github.com/elamre/gomberman/netcode/local"
+	"github.com/elamre/gomberman/netcode/packet"
 	"log"
+	"reflect"
 	"time"
 )
 
@@ -55,4 +59,72 @@ func main() {
 			}
 		}
 	}
+}
+
+var testMap = map[reflect.Type]int{}
+var mapTest = map[int]reflect.Type{}
+var index = 0
+
+func registerStruct(someStruct any) int {
+	tt := reflect.TypeOf(someStruct)
+	if _, ok := testMap[tt]; ok {
+		panic("Already exists")
+	}
+	testMap[tt] = index
+	mapTest[index] = tt
+	index++
+	log.Printf("Registered at: %d", index-1)
+	return index - 1
+}
+
+func returnPackage(index int) any {
+	return reflect.New(mapTest[index]).Interface()
+}
+
+type SomeInterface interface {
+	SayContents()
+}
+
+type SomeStructA struct {
+	Number int
+}
+
+func (s SomeStructA) SayContents() {
+	log.Println("Stuct A")
+}
+
+type SomeStructB struct {
+}
+
+func (s SomeStructB) SayContents() {
+	log.Println("Stuct B")
+}
+
+func main1() {
+	core.RegisterPackets()
+	network := local.NewFakeNetwork()
+	client := local.NewLocalClient(network)
+	server := local.NewLocalServer(network)
+
+	go func() {
+		for {
+			pack := server.GetPacket()
+			pp := *pack
+
+			switch t := pp.(type) {
+			case *packet.ChatPacket:
+				log.Println("We do have A yes!")
+
+			default:
+				log.Printf("unknown type: %T", t)
+			}
+		}
+	}()
+
+	client.Write(packet.ChatPacket{
+		Message: "Test",
+	})
+	time.Sleep(10 * time.Second)
+	_ = client
+
 }
