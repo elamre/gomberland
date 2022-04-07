@@ -8,3 +8,10 @@ type ClientConnectionInterface interface {
 	GetPacket() *Packet
 	Close() any
 }
+
+type ServerConnectionInterface interface {
+	Start(port int)
+	Stop()
+	BroadcastPacket(packet Packet)
+	SetClientConnectedCallback(Connected func(connectionInterface ClientConnectionInterface))
+}

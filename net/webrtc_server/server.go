@@ -1,4 +1,4 @@
-package server
+package webrtc_server
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ import (
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
 
-	"github.com/elamre/gomberman/net/shared"
+	"github.com/elamre/gomberman/net/webrtc_shared"
 )
 
 const (
@@ -31,7 +31,7 @@ type Server struct {
 }
 
 type Options struct {
-	// MaxConnections is the maximum client connections
+	// MaxConnections is the maximum webrtc_client connections
 	//
 	// If not set, this will default to 256
 	MaxConnections int
@@ -93,11 +93,11 @@ func (conn *Connection) Send(data []byte) error {
 
 // CloseButDontFree will close down the connection
 //
-// But it won't free up the server slot, that should be handled in a loop at the start
+// But it won't free up the webrtc_server slot, that should be handled in a loop at the start
 // of the frame so it can cleanup player objects / etc
 //
 // ie.
-// for i, conn := range net.server.Connections() {
+// for i, conn := range net.webrtc_server.Connections() {
 // 		gameConn := net.gameConnections[i]
 //		if !conn.IsConnected() && {
 //			if gameConn.IsUsed {
@@ -277,7 +277,7 @@ func (s *Server) handleSDP(w http.ResponseWriter, r *http.Request) {
 	candidateErrors := make([]error, 0)
 	peerConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 		if candidate == nil {
-			// if nil than all ICE candidates have been sent from the client
+			// if nil than all ICE candidates have been sent from the webrtc_client
 			close(waitChannel)
 			return
 		}
@@ -327,12 +327,13 @@ func (s *Server) handleSDP(w http.ResponseWriter, r *http.Request) {
 		conn.mu.Unlock()
 
 		foundConn = conn
+		log.Printf("New connection: %+v", conn)
 		break
 	}
 	if conn := foundConn; conn == nil {
 		peerConnection.Close()
 
-		message := "server is full"
+		message := "webrtc_server is full"
 		log.Print(message)
 		http.Error(w, message, 503)
 		return
@@ -340,7 +341,7 @@ func (s *Server) handleSDP(w http.ResponseWriter, r *http.Request) {
 
 	peerConnection.OnDataChannel(foundConn.onDataChannel)
 
-	if err := json.NewEncoder(w).Encode(&shared.ConnectResponse{
+	if err := json.NewEncoder(w).Encode(&webrtc_shared.ConnectResponse{
 		Candidates: candidateList,
 		Answer:     answer,
 	}); err != nil {
@@ -391,8 +392,8 @@ func (conn *Connection) onDataChannel(dataChannel *webrtc.DataChannel) {
 	}
 	conn.packets = make(chan []byte)
 	// note(jae): 2021-04-04
-	// we only consider a client actually connected once a datachannel
-	// is opened. This is because if there are UDP port forwarding issues on the server
+	// we only consider a webrtc_client actually connected once a datachannel
+	// is opened. This is because if there are UDP port forwarding issues on the webrtc_server
 	// this codepath will never be reached.
 	conn.isConnected = true
 	conn.dataChannel = dataChannel
@@ -439,7 +440,7 @@ func (s *Server) start() error {
 	s.options.isListening.Store(false)
 	stunServer, err := ListenAndStart(s.options.PublicIP)
 	if err != nil {
-		return errors.Wrap(err, "failed to start stun server")
+		return errors.Wrap(err, "failed to start stun webrtc_server")
 	}
 	s.stunServer = stunServer
 	defer s.stunServer.Close()
@@ -448,9 +449,9 @@ func (s *Server) start() error {
 	settings := webrtc.SettingEngine{}
 
 	// note(jae): 2021-03-27
-	// Set explicit UDP port ranges to allow on server box
+	// Set explicit UDP port ranges to allow on webrtc_server box
 	if err := settings.SetEphemeralUDPPortRange(10000, 11999); err != nil {
-		return errors.Wrap(err, "failed to set UDP port range for server")
+		return errors.Wrap(err, "failed to set UDP port range for webrtc_server")
 	}
 	s.api = webrtc.NewAPI(webrtc.WithSettingEngine(settings))
 
@@ -460,13 +461,13 @@ func (s *Server) start() error {
 		Addr:    ":" + strconv.Itoa(s.options.HttpPort),
 		Handler: nil,
 	}
-	ln, err := net.Listen("udp", httpServer.Addr)
+	ln, err := net.Listen("tcp", httpServer.Addr)
 	if err != nil {
 		return errors.Wrap(err, "failed to listen on "+httpServer.Addr)
 	}
 	s.options.isListening.Store(true)
 	if err := httpServer.Serve(ln); err != nil {
-		return errors.Wrap(err, "server closed")
+		return errors.Wrap(err, "webrtc_server closed")
 	}
 	return nil
 }

@@ -1,9 +1,13 @@
 package local
 
-import . "github.com/elamre/serverclient/netcode/core"
+import (
+	. "github.com/elamre/gomberman/netcode/core"
+	"time"
+)
 
 type LocalServer struct {
-	n *FakeNetwork
+	packetIndex uint64
+	n           *FakeNetwork
 }
 
 func NewLocalServer(n *FakeNetwork) LocalServer {
@@ -19,7 +23,11 @@ func (l *LocalServer) Disconnect() any {
 }
 
 func (l *LocalServer) Write(packet Packet) any {
-	l.n.ServerWrite(packet)
+	r := NewRawPacket(packet)
+	r.PacketTime = time.Now().UnixMilli()
+	r.PacketId = l.packetIndex
+	r.PacketId++
+	l.n.ServerWrite(r)
 	return nil
 }
 
@@ -27,13 +35,10 @@ func (l *LocalServer) SetPacketReceivedCallback(PacketReceived func(packet Packe
 
 }
 
-func (l *LocalServer) GetPacket() *Packet {
-	/*if l.n.serverIncoming.Length() == 0 {
-		return nil
-	}*/
-	dat := l.n.serverIncoming.Pop()
-	pack := BytesToPacket(dat.Data)
-	return &pack
+func (l *LocalServer) GetPacket() Packet {
+	pack := l.n.ServerRead()
+	// Check index
+	return pack.ContainingPacket
 }
 
 func (l *LocalServer) Close() any {

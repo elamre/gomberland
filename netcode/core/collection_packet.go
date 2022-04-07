@@ -1,14 +1,16 @@
 package core
 
 import (
-	"github.com/elamre/serverclient/netcode/packet"
+	"github.com/elamre/gomberman/netcode/packet"
+	"log"
 )
 
 var (
-	PingPacketIndex        int
-	ChatPacketIndex        int
-	EntityStatePacketIndex int
-	PhysicsPacketIndex     int
+	PingPacketIndex        uint32
+	ChatPacketIndex        uint32
+	EntityStatePacketIndex uint32
+	PhysicsPacketIndex     uint32
+	ConnectionPacketIndex  uint32
 )
 
 func RegisterPackets() {
@@ -18,5 +20,6 @@ func RegisterPackets() {
 	ChatPacketIndex = RegisterPacket(packet.ChatPacket{})
 	EntityStatePacketIndex = RegisterPacket(packet.EntityStatePacket{})
 	PhysicsPacketIndex = RegisterPacket(packet.PhysicsPacket{})
-
+	PhysicsPacketIndex = RegisterPacket(packet.ConnectionPacket{})
+	log.Printf("Registered packets: %+v\n", GetRegisteredPackets())
 }

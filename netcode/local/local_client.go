@@ -1,6 +1,9 @@
 package local
 
-import . "github.com/elamre/serverclient/netcode/core"
+import (
+	. "github.com/elamre/gomberman/netcode/core"
+	"time"
+)
 
 type LocalClient struct {
 	n *FakeNetwork
@@ -19,7 +22,9 @@ func (l *LocalClient) Disconnect() any {
 }
 
 func (l *LocalClient) Write(packet Packet) any {
-	l.n.ClientWrite(packet)
+	p := NewRawPacket(packet)
+	p.PacketTime = time.Now().UnixMilli()
+	l.n.ClientWrite(p)
 	return nil
 }
 
@@ -34,6 +39,11 @@ func (l *LocalClient) GetPacket() *Packet {
 	dat := l.n.serverOutgoing.Pop()
 	pack := BytesToPacket(dat.Data)
 	return &pack
+}
+
+func (l *LocalClient) WaitForPacket() Packet {
+	r := l.n.ClientRead()
+	return r.ContainingPacket
 }
 
 func (l *LocalClient) Close() any {

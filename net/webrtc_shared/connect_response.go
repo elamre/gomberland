@@ -1,4 +1,4 @@
-package shared
+package webrtc_shared
 
 import "github.com/pion/webrtc/v3"
 

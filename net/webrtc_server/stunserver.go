@@ -1,4 +1,4 @@
-package server
+package webrtc_server
 
 import (
 	"fmt"
@@ -71,11 +71,11 @@ func ListenAndStart(publicIP string) (*turn.Server, error) {
 
 	//tcpListener, err := net.Listen("tcp4", "0.0.0.0:"+portStr)
 	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to create TURN server listener")
+	//	return nil, errors.Wrap(err, "failed to create TURN webrtc_server listener")
 	//}
 	udpListener, err := net.ListenPacket("udp4", "0.0.0.0:"+portStr)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create STUN server listener")
+		return nil, errors.Wrap(err, "failed to create STUN webrtc_server listener")
 	}
 	relayAddressGenerator := &turn.RelayAddressGeneratorStatic{
 		RelayAddress: publicIPParsed,
@@ -86,11 +86,11 @@ func ListenAndStart(publicIP string) (*turn.Server, error) {
 		udpListener = &stunLogger{udpListener}
 	}
 	s, err := turn.NewServer(turn.ServerConfig{
-		// Realm SHOULD be the domain name of the provider of the TURN server.
+		// Realm SHOULD be the domain name of the provider of the TURN webrtc_server.
 		// https://stackoverflow.com/a/63930426/5013410
 		Realm: "silbinarywolf.com",
 		// Set AuthHandler callback
-		// This is called everytime a user tries to authenticate with the TURN server
+		// This is called everytime a user tries to authenticate with the TURN webrtc_server
 		// Return the key for that user, or false when no user is found
 		AuthHandler: func(username string, realm string, srcAddr net.Addr) ([]byte, bool) {
 			// note(jae): 2021-04-15
@@ -110,7 +110,7 @@ func ListenAndStart(publicIP string) (*turn.Server, error) {
 		// This TURN stuff hasn't been properly tested and so if uncommented
 		// I'm unsure if it even works.
 		//
-		// In anycase, I dont think we *want* a TURN server based on my reading of this:
+		// In anycase, I dont think we *want* a TURN webrtc_server based on my reading of this:
 		// https://bloggeek.me/google-free-turn-server/
 		//
 		// My current assumption is that we do NOT want it for low-latency games as it relays
@@ -125,14 +125,14 @@ func ListenAndStart(publicIP string) (*turn.Server, error) {
 		//},
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to start TURN/STUN server")
+		return nil, errors.Wrap(err, "unable to start TURN/STUN webrtc_server")
 	}
 
 	// note(jae): 2021-04-15
-	// after start-up the server never really wants to close this down but i've kept
+	// after start-up the webrtc_server never really wants to close this down but i've kept
 	// the code here as a note to self on how to close it if we needed to
 	//if err = s.Close(); err != nil {
-	//	return errors.Wrap(err, "unable to close TURN/STUN server")
+	//	return errors.Wrap(err, "unable to close TURN/STUN webrtc_server")
 	//}
 
 	return s, nil

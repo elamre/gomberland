@@ -1,4 +1,4 @@
-package client
+package webrtc_client
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
 
-	"github.com/elamre/gomberman/net/shared"
+	"github.com/elamre/gomberman/net/webrtc_shared"
 )
 
 type Client struct {
@@ -126,31 +126,31 @@ func (client *Client) Send(data []byte) error {
 	return err
 }
 
-func postConnect(ipAddress string, offer webrtc.SessionDescription) (shared.ConnectResponse, error) {
+func postConnect(ipAddress string, offer webrtc.SessionDescription) (webrtc_shared.ConnectResponse, error) {
 	b := new(bytes.Buffer)
 	err := json.NewEncoder(b).Encode(offer)
 	if err != nil {
-		return shared.ConnectResponse{}, errors.Wrap(err, "unable to encode JSON offer")
+		return webrtc_shared.ConnectResponse{}, errors.Wrap(err, "unable to encode JSON offer")
 	}
 	resp, err := http.Post("http://"+ipAddress+"/sdp", "application/json; charset=utf-8", b)
 	if err != nil {
-		return shared.ConnectResponse{}, errors.Wrap(err, "unable to post JSON offer to SDP")
+		return webrtc_shared.ConnectResponse{}, errors.Wrap(err, "unable to post JSON offer to SDP")
 	}
 	dec := json.NewDecoder(resp.Body)
 	dec.DisallowUnknownFields()
-	var connectResp shared.ConnectResponse
+	var connectResp webrtc_shared.ConnectResponse
 	err = dec.Decode(&connectResp)
 	if err != nil {
 		// ignore error returned if we failed to close this response body
 		_ = resp.Body.Close()
 
-		return shared.ConnectResponse{}, errors.Wrap(err, "decode response from SDP post")
+		return webrtc_shared.ConnectResponse{}, errors.Wrap(err, "decode response from SDP post")
 	}
 	if err := resp.Body.Close(); err != nil {
-		return shared.ConnectResponse{}, errors.Wrap(err, "failed to close response stream from SDP post")
+		return webrtc_shared.ConnectResponse{}, errors.Wrap(err, "failed to close response stream from SDP post")
 	}
 	if len(connectResp.Candidates) == 0 {
-		return shared.ConnectResponse{}, errors.New("missing candidates from connection, expected more than 0 candidates")
+		return webrtc_shared.ConnectResponse{}, errors.New("missing candidates from connection, expected more than 0 candidates")
 	}
 	return connectResp, nil
 }
@@ -204,7 +204,7 @@ func (client *Client) start() error {
 		}
 	})
 
-	// Create an offer to send to the server
+	// Create an offer to send to the webrtc_server
 	offer, err := peerConnection.CreateOffer(&webrtc.OfferOptions{
 		// todo(Jae): 2021-28-02
 		// Look into "ICERestart: true"
