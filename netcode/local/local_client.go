@@ -1,7 +1,8 @@
 package local
 
 import (
-	. "github.com/elamre/gomberman/netcode/core"
+	. "github.com/elamre/gomberman/net/packet_interface"
+	. "github.com/elamre/gomberman/net/webrtc"
 	"time"
 )
 

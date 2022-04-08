@@ -1,23 +1,23 @@
 package main
 
 import (
-	"github.com/elamre/gomberman/net/webrtc_client"
-	"github.com/elamre/gomberman/net/webrtc_server"
-	"github.com/elamre/gomberman/netcode/core"
+	"github.com/elamre/gomberman/net"
+	webrtc2 "github.com/elamre/gomberman/net/webrtc"
+	"github.com/elamre/gomberman/net_game"
 	"github.com/elamre/gomberman/netcode/local"
 	"github.com/elamre/gomberman/netcode/packet"
-	"github.com/elamre/gomberman/netcode/webrtc"
 	"log"
 	"time"
 )
 
-const port = 50000
+const port = 50001
 
 type NetworkWorld struct {
 }
 
+/*
 func main1() {
-	core.RegisterPackets()
+	net_game.RegisterPackets()
 	server := webrtc_server.New(webrtc_server.Options{
 		MaxConnections: 5,
 		HttpPort:       port,
@@ -64,7 +64,7 @@ func main1() {
 		}
 	}
 }
-
+*/
 func benchMark() {
 	network := local.NewFakeNetwork()
 	cclient := local.NewLocalClient(network)
@@ -104,52 +104,64 @@ func benchMark() {
 }
 
 func main() {
-	core.RegisterPackets()
-
-	server := webrtc_server.New(webrtc_server.Options{
-		MaxConnections: 5,
-		HttpPort:       port,
-		PublicIP:       "127.0.0.1",
-		ICEServerURLs:  []string{"stun:127.0.0.1:3478"},
+	net_game.RegisterPackets()
+	server := webrtc2.NewWebrtcHost("127.0.0.1", port)
+	server.SetOnDisconnection(func(client net.ServerClient) {
+		log.Printf("Client disconnected: %+v", client)
+	})
+	server.SetOnConnection(func(client net.ServerClient) {
+		log.Printf("Client connected: %+v", client)
 	})
 	server.Start()
 
 	go func() {
 		for {
 			time.Sleep(time.Second)
-			for _, conn := range server.Connections() {
-				if conn.IsConnected() {
-					log.Println("connection connected")
-					dat, d := conn.Read()
-					if d {
-						rawPacket := core.RawPacketFrom(dat)
-						log.Printf("webrtc_server got: %+v", rawPacket)
-						if err := conn.Send(dat); err != nil {
-							panic(err)
-						}
-					}
+			server.ClientIterator(func(c net.ServerClient) {
+				data, err := c.ReadPacket()
+				if err != nil {
+					c.Close()
+					return
 				}
-			}
+				if data != nil {
+					log.Printf("Packet: %+v", data)
+					c.WritePacket(data)
+				}
+			})
 		}
 	}()
 
 	time.Sleep(time.Second)
-	client := webrtc.NewWebrtcClient("127.0.0.1", port)
+	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
 	log.Printf("Error: %v", client.Connect())
-	client.Write(packet.NewRegisterPacket("Elmar"))
+	if err := client.WritePacket(packet.NewRegisterPacket("Elmar")); err != nil {
+		panic(err)
+	}
+	for {
+		readPacket, err := client.ReadPacket()
+		if err != nil {
+			panic(err)
+		}
+		if readPacket != nil {
+			log.Printf("Received: %+v", *readPacket)
+			break
+		}
 
+	}
 	time.Sleep(3 * time.Second)
-	c1 := webrtc.NewWebrtcClient("127.0.0.1", port)
+	client.Close()
+	time.Sleep(3 * time.Second)
+	c1 := webrtc2.NewWebrtcClient("127.0.0.1", port)
 	c1.Connect()
-	c2 := webrtc.NewWebrtcClient("127.0.0.1", port)
+	c2 := webrtc2.NewWebrtcClient("127.0.0.1", port)
 	c2.Connect()
-	c3 := webrtc.NewWebrtcClient("127.0.0.1", port)
+	c3 := webrtc2.NewWebrtcClient("127.0.0.1", port)
 	c3.Connect()
 	time.Sleep(10 * time.Second)
 }
 
 func main2() {
-	core.RegisterPackets()
+	net_game.RegisterPackets()
 	time.Sleep(time.Second)
 	network := local.NewFakeNetwork()
 	cclient := local.NewLocalClient(network)

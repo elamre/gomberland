@@ -2,6 +2,7 @@ package webrtc_server
 
 import (
 	"encoding/json"
+	"github.com/elamre/gomberman/net/webrtc/internal/webrtc_shared"
 	"io"
 	"log"
 	"net"
@@ -13,8 +14,6 @@ import (
 	"github.com/pion/turn/v2"
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
-
-	"github.com/elamre/gomberman/net/webrtc_shared"
 )
 
 const (
@@ -28,6 +27,9 @@ type Server struct {
 	options     Options
 	stunServer  *turn.Server
 	connections []*Connection
+
+	OnConnection func(connection *Connection)
+	OnDisconnect func(connection *Connection)
 }
 
 type Options struct {
@@ -52,6 +54,8 @@ type Connection struct {
 	packets        chan []byte
 	isConnected    bool
 	isUsed         bool
+
+	onDisconnect func(connection *Connection)
 }
 
 func (s *Server) Connections() []*Connection {
@@ -59,6 +63,7 @@ func (s *Server) Connections() []*Connection {
 }
 
 func (conn *Connection) IsConnected() bool {
+
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 	return conn.isConnected
@@ -327,6 +332,9 @@ func (s *Server) handleSDP(w http.ResponseWriter, r *http.Request) {
 		conn.mu.Unlock()
 
 		foundConn = conn
+		if s.OnConnection != nil {
+			s.OnConnection(foundConn)
+		}
 		log.Printf("New connection: %+v", conn)
 		break
 	}
@@ -340,6 +348,7 @@ func (s *Server) handleSDP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	peerConnection.OnDataChannel(foundConn.onDataChannel)
+	foundConn.onDisconnect = s.OnDisconnect
 
 	if err := json.NewEncoder(w).Encode(&webrtc_shared.ConnectResponse{
 		Candidates: candidateList,
@@ -422,6 +431,9 @@ func (conn *Connection) onDataChannelClose() {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 	conn.needsMutexLock_disconnectButKeepMarkedAsUsed()
+	if conn.onDisconnect != nil {
+		conn.onDisconnect(conn)
+	}
 }
 
 func (conn *Connection) onDataChannelMessage(msg webrtc.DataChannelMessage) {

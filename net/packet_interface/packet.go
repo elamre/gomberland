@@ -1,4 +1,4 @@
-package core
+package packet_interface
 
 import (
 	"bytes"

@@ -3,14 +3,13 @@ package webrtc_client
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/elamre/gomberman/net/webrtc/internal/webrtc_shared"
 	"net/http"
 	"sync"
 	"sync/atomic"
 
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
-
-	"github.com/elamre/gomberman/net/webrtc_shared"
 )
 
 type Client struct {
