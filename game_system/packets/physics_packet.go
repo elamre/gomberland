@@ -1,3 +1,3 @@
-package packet
+package packets
 
 type PhysicsPacket struct{}

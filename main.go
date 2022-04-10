@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/elamre/gomberman/net"
+	"github.com/elamre/gomberman/common_system/packets"
+	"github.com/elamre/gomberman/lobby_system"
+	packets2 "github.com/elamre/gomberman/lobby_system/packets"
+	local2 "github.com/elamre/gomberman/net/local"
 	webrtc2 "github.com/elamre/gomberman/net/webrtc"
-	"github.com/elamre/gomberman/net_game"
-	"github.com/elamre/gomberman/netcode/local"
-	"github.com/elamre/gomberman/netcode/packet"
 	"log"
 	"time"
 )
@@ -66,9 +66,10 @@ func main1() {
 }
 */
 func benchMark() {
-	network := local.NewFakeNetwork()
-	cclient := local.NewLocalClient(network)
-	cserver := local.NewLocalServer(network)
+	network := local2.NewFakeNetwork()
+	cclient := local2.NewLocalClient(network)
+	_ = cclient
+	cserver := local2.NewLocalServer(network)
 	packets := 1000000
 	go func() {
 		index := 0
@@ -95,82 +96,65 @@ func benchMark() {
 	}()
 
 	start := time.Now()
-	for i := 0; i < packets; i++ {
-		cclient.Write(packet.ChatPacket{
+	/*	for i := 0; i < packets; i++ {
+		cclient.Write(packets.ChatPacket{
 			Message: "Test",
 		})
-	}
+	}*/
 	log.Printf("Took: %vms", time.Now().Sub(start).Milliseconds())
 }
 
 func main() {
-	net_game.RegisterPackets()
-	server := webrtc2.NewWebrtcHost("127.0.0.1", port)
-	server.SetOnDisconnection(func(client net.ServerClient) {
-		log.Printf("Client disconnected: %+v", client)
-	})
-	server.SetOnConnection(func(client net.ServerClient) {
-		log.Printf("Client connected: %+v", client)
-	})
-	server.Start()
+	packets.Register()
+	packets2.Register()
+
+	serverLobby := lobby_system.NewLobbyServerSystem(webrtc2.NewWebrtcHost("127.0.0.1", port))
 
 	go func() {
 		for {
 			time.Sleep(time.Second)
-			server.ClientIterator(func(c net.ServerClient) {
-				data, err := c.ReadPacket()
-				if err != nil {
-					c.Close()
-					return
-				}
-				if data != nil {
-					log.Printf("Packet: %+v", data)
-					c.WritePacket(data)
-				}
+			serverLobby.Update()
+		}
+	}()
+	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
+	client.Connect()
+	for !client.IsConnected() {
+	}
+	clientLobby := lobby_system.NewLobbyClientSystem(client)
+
+	clientLobby.RegisterPlayer("Elmar")
+	clientLobby.SendPacket(packets2.RoomPacket{
+		Action:   packets2.RoomCreateAction,
+		Password: "werwe",
+		Name:     "ElmaR",
+	})
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			clientLobby.Update()
+			clientLobby.SendPacket(packets2.RoomPacket{
+				Action:   packets2.RoomCreateAction,
+				Password: "werwe",
+				Name:     "ElmaR2",
 			})
 		}
 	}()
-
-	time.Sleep(time.Second)
-	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
-	log.Printf("Error: %v", client.Connect())
-	if err := client.WritePacket(packet.NewRegisterPacket("Elmar")); err != nil {
-		panic(err)
-	}
-	for {
-		readPacket, err := client.ReadPacket()
-		if err != nil {
-			panic(err)
-		}
-		if readPacket != nil {
-			log.Printf("Received: %+v", *readPacket)
-			break
-		}
-
-	}
-	time.Sleep(3 * time.Second)
-	client.Close()
-	time.Sleep(3 * time.Second)
-	c1 := webrtc2.NewWebrtcClient("127.0.0.1", port)
-	c1.Connect()
-	c2 := webrtc2.NewWebrtcClient("127.0.0.1", port)
-	c2.Connect()
-	c3 := webrtc2.NewWebrtcClient("127.0.0.1", port)
-	c3.Connect()
 	time.Sleep(10 * time.Second)
 }
 
 func main2() {
-	net_game.RegisterPackets()
+	packets.Register()
+	packets2.Register()
+
 	time.Sleep(time.Second)
-	network := local.NewFakeNetwork()
-	cclient := local.NewLocalClient(network)
-	cserver := local.NewLocalServer(network)
+	network := local2.NewFakeNetwork()
+	cclient := local2.NewLocalClient(network)
+	cserver := local2.NewLocalServer(network)
 
 	go func() {
 		pack := cserver.GetPacket()
 		log.Printf("Server received: %+v", pack)
-		cserver.Write(packet.ConnectionPacket{
+		cserver.Write(packets.ConnectionPacket{
 			UserId:  1,
 			Action:  2,
 			Message: "Registered",
@@ -179,12 +163,12 @@ func main2() {
 		log.Printf("Server received: %+v", pack)
 	}()
 
-	cclient.Write(packet.NewRegisterPacket("Elmar"))
+	cclient.Write(packets.NewRegisterPacket("Elmar"))
 	time.Sleep(time.Second)
 	pack := cclient.WaitForPacket()
 	log.Printf("Client got: %+v", pack)
 	time.Sleep(time.Second)
-	cclient.Write(packet.ChatPacket{Message: "Registered!"})
+	cclient.Write(packets.ChatPacket{Message: "Registered!"})
 
 	time.Sleep(10 * time.Second)
 }

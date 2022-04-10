@@ -15,13 +15,13 @@ type WebrtcClient struct {
 	packetIdx uint64
 }
 
-func NewWebrtcClient(ip string, port int) WebrtcClient {
+func NewWebrtcClient(ip string, port int) *WebrtcClient {
 	c := WebrtcClient{ip: ip, port: port, packetIdx: 1}
 	c.client = webrtc_client.New(webrtc_client.Options{
 		IPAddress:     fmt.Sprintf("%s:%d", ip, port),
 		ICEServerURLs: []string{"stun:127.0.0.1:3478"},
 	})
-	return c
+	return &c
 }
 
 func (w *WebrtcClient) Connect() any {
@@ -63,11 +63,11 @@ func (w *WebrtcClient) GotPacket() bool {
 	return true
 }
 
-func (w *WebrtcClient) ReadPacket() (*packet_interface.Packet, error) {
+func (w *WebrtcClient) ReadPacket() (packet_interface.Packet, error) {
 	if data, success := w.client.Read(); success {
 		log.Printf("Data: % 02x", data)
 		rawPacket := RawPacketFrom(data)
-		return &rawPacket.ContainingPacket, nil
+		return rawPacket.ContainingPacket, nil
 	}
 	return nil, nil
 }

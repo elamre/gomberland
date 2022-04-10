@@ -1,4 +1,4 @@
-package packet
+package packets
 
 import (
 	"bytes"
@@ -6,10 +6,11 @@ import (
 )
 
 const (
-	_                        = iota
-	ConnectionRegisterAction = iota
-	ConnectionAcceptedAction = iota
-	ConnectionRefusedAction  = iota
+	_                             = iota
+	ConnectionRegisterAction      = iota
+	ConnectionAcceptedAction      = iota
+	ConnectionRefusedAction       = iota
+	ConnectionNewRegisteredAction = iota
 )
 
 type ConnectionAction uint32

@@ -33,6 +33,6 @@ type Client interface {
 	IsConnected() bool
 	WritePacket(packet packet_interface.Packet) any
 	GotPacket() bool
-	ReadPacket() (packet *packet_interface.Packet, err error)
+	ReadPacket() (packet packet_interface.Packet, err error)
 	Close() any
 }
