@@ -7,6 +7,7 @@ import (
 	local2 "github.com/elamre/gomberman/net/local"
 	webrtc2 "github.com/elamre/gomberman/net/webrtc"
 	"github.com/elamre/gomberman/ping_system"
+	"github.com/elamre/gomberman/ping_system/ping_packets"
 	"log"
 	"time"
 )
@@ -110,6 +111,7 @@ var client = false
 func main() {
 	common_packets.Register()
 	packets2.Register()
+	ping_packets.Register()
 
 	if !client {
 		server := webrtc2.NewWebrtcHost("192.168.178.43", port)
@@ -127,8 +129,11 @@ func main() {
 	client.Connect()
 	for !client.IsConnected() {
 	}
+	clientDelegator := NewClientDelegator(client)
 	clientLobby := lobby_system.NewLobbyClientSystem(client)
-	pingSystem := ping_system.NewPingClientSystem(client)
+	clientDelegator.RegisterSubSystem("clientlobby", clientLobby)
+	clientDelegator.RegisterSubSystem("ping", ping_system.NewPingClientSystem(client))
+
 	clientLobby.RegisterPlayer("Elmar")
 	clientLobby.SendPacket(packets2.RoomPacket{
 		Action:   packets2.RoomCreateAction,
@@ -137,8 +142,8 @@ func main() {
 	})
 	go func() {
 		for {
-			clientLobby.Update()
-			pingSystem.Update()
+			clientDelegator.Update()
+
 		}
 	}()
 	time.Sleep(10 * time.Second)

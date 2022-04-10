@@ -31,3 +31,7 @@ func PacketToBytes(packet Packet) []byte {
 	packet.ToWriter(b)
 	return b.Bytes()
 }
+
+func PacketToType[t any](p Packet) t {
+	return p.(t)
+}

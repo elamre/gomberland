@@ -19,13 +19,13 @@ func NewPingClientSystem(client net.Client) *PingClientSystem {
 	return &PingClientSystem{client: client, lastBroadcast: time.Now()}
 }
 
-func (p *PingClientSystem) pingCallback(c net.ServerClient, d common_system.ServerRegulator, pack packet_interface.Packet) {
+func (p *PingClientSystem) pingCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
 	ping := pack.(ping_packets.PingPacket)
 	p.LastPing = ping.GetPing()
 	log.Printf("Ping: %dms", ping)
 }
 
-func (p *PingClientSystem) RegisterCallbacks(r common_system.ServerRegulator) {
+func (p *PingClientSystem) RegisterCallbacks(r common_system.ClientRegulator) {
 	r.RegisterPacketCallback(p.pingCallback, ping_packets.PingPacket{})
 }
 

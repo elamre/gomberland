@@ -9,21 +9,16 @@ import (
 
 type ServerDelegator struct {
 	server             net.Server
-	subSystems         map[string]SubSystem
-	subSystemsCallback map[reflect.Type][]PacketCallback
+	subSystems         map[string]ServerSubSystem
+	subSystemsCallback map[reflect.Type][]PacketServerCallback
 }
 
 func NewServerDelegator(server net.Server) *ServerDelegator {
 	return &ServerDelegator{
+		subSystems:         make(map[string]ServerSubSystem),
 		server:             server,
-		subSystems:         make(map[string]SubSystem),
-		subSystemsCallback: make(map[reflect.Type][]PacketCallback),
+		subSystemsCallback: make(map[reflect.Type][]PacketServerCallback),
 	}
-}
-
-func (s *ServerDelegator) RegisterSubSystem(name string, system SubSystem) {
-	s.subSystems[name] = system
-	system.RegisterCallbacks(s)
 }
 
 func (s *ServerDelegator) Update() {
@@ -43,21 +38,25 @@ func (s *ServerDelegator) Update() {
 	}
 }
 
-func (s *ServerDelegator) RegisterPacketCallback(cb PacketCallback, packet packet_interface.Packet) {
+func (s *ServerDelegator) RegisterPacketCallback(cb PacketServerCallback, packet packet_interface.Packet) {
 	t := reflect.TypeOf(packet)
 	if _, ok := s.subSystemsCallback[t]; !ok {
-		s.subSystemsCallback[t] = make([]PacketCallback, 0)
+		s.subSystemsCallback[t] = make([]PacketServerCallback, 0)
 	}
 	s.subSystemsCallback[t] = append(s.subSystemsCallback[t], cb)
 }
 
-func (s *ServerDelegator) RemovePacketCallback(cb PacketCallback, packetType packet_interface.Packet) {
+func (s *ServerDelegator) RemovePacketCallback(cb PacketServerCallback, packetType packet_interface.Packet) {
 }
-
 func (s *ServerDelegator) RemoveSubSystem(name string) {
 	delete(s.subSystems, name)
 }
 
 func (s *ServerDelegator) GetSubsystem(name string) interface{} {
 	return s.subSystems[name]
+}
+
+func (s *ServerDelegator) RegisterSubSystem(name string, system ServerSubSystem) {
+	s.subSystems[name] = system
+	system.RegisterCallbacks(s)
 }

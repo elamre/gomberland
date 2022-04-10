@@ -33,36 +33,38 @@ func (c *LobbyClientSystem) RegisterPlayer(name string) {
 	}
 }
 
+func (p *LobbyClientSystem) connectionCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
+	t := pack.(common_packets.ConnectionPacket)
+	if t.Action == common_packets.ConnectionRefusedAction {
+		p.curPlayer.HasRegistered = false
+		log.Printf("Unable to register: %s", t.Message)
+	} else if t.Action == common_packets.ConnectionAcceptedAction {
+		p.curPlayer.Id = t.UserId
+		log.Println("accepted")
+	} else {
+		log.Printf("Player with name: %s registered (%d)", t.Message, t.UserId)
+	}
+}
+func (lp *LobbyClientSystem) roomupdateCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
+	t := pack.(packets2.RoomUpdatePacket)
+	for _, room := range t.Rooms {
+		log.Printf("Room: %s", room.RoomName)
+		players := ""
+		for _, p := range room.Players {
+			players += p.Name + ", "
+		}
+		log.Println(players)
+	}
+}
+
+func (p *LobbyClientSystem) RegisterCallbacks(r common_system.ClientRegulator) {
+	r.RegisterPacketCallback(p.connectionCallback, common_packets.ConnectionPacket{})
+	r.RegisterPacketCallback(p.roomupdateCallback, packets2.RoomUpdatePacket{})
+}
+
 func (c *LobbyClientSystem) Update() {
 	if !c.client.IsConnected() {
 		return
 	}
-
-	pack, err := c.client.ReadPacket()
-	if err != nil {
-		panic(err)
-	}
-	switch t := pack.(type) {
-	case common_packets.ConnectionPacket:
-		if t.Action == common_packets.ConnectionRefusedAction {
-			c.curPlayer.HasRegistered = false
-			log.Printf("Unable to register: %s", t.Message)
-		} else if t.Action == common_packets.ConnectionAcceptedAction {
-			c.curPlayer.Id = t.UserId
-			log.Println("accepted")
-		} else {
-			log.Printf("Player with name: %s registered (%d)", t.Message, t.UserId)
-		}
-	case packets2.RoomUpdatePacket:
-		for _, room := range t.Rooms {
-			log.Printf("Room: %s", room.RoomName)
-			players := ""
-			for _, p := range room.Players {
-				players += p.Name + ", "
-			}
-			log.Println(players)
-		}
-	default:
-		log.Printf("type; %T, contains: %+v", t, t)
-	}
+	// We can draw here something
 }
