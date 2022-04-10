@@ -46,15 +46,15 @@ func (p *LobbyClientSystem) connectionCallback(c net.Client, d common_system.Cli
 	}
 }
 func (lp *LobbyClientSystem) roomupdateCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
-	t := pack.(packets2.RoomUpdatePacket)
-	for _, room := range t.Rooms {
-		log.Printf("Room: %s", room.RoomName)
-		players := ""
-		for _, p := range room.Players {
-			players += p.Name + ", "
-		}
-		log.Println(players)
-	}
+	/*	t := pack.(packets2.RoomUpdatePacket)
+		for _, room := range t.Rooms {
+			log.Printf("Room: %s", room.RoomName)
+			players := ""
+			for _, p := range room.Players {
+				players += p.Name + ", "
+			}
+			log.Println(players)
+		}*/
 }
 
 func (p *LobbyClientSystem) RegisterCallbacks(r common_system.ClientRegulator) {

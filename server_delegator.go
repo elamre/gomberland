@@ -23,13 +23,17 @@ func NewServerDelegator(server net.Server) *ServerDelegator {
 
 func (s *ServerDelegator) Update() {
 	s.server.ClientIterator(func(c net.ServerClient) {
-		pack, err := c.ReadPacket()
-		if err != nil {
-			panic(err)
-		}
-		if pack != nil {
-			for _, cb := range s.subSystemsCallback[reflect.TypeOf(pack)] {
-				cb(c, s, pack)
+		for {
+			pack, err := c.ReadPacket()
+			if err != nil {
+				panic(err)
+			}
+			if pack != nil {
+				for _, cb := range s.subSystemsCallback[reflect.TypeOf(pack)] {
+					cb(c, s, pack)
+				}
+			} else {
+				break
 			}
 		}
 	})

@@ -13,6 +13,7 @@ const (
 	RoomJoinSuccessAction   = iota
 	RoomJoinFailedAction    = iota
 	RoomLeaveAction         = iota
+	RoomReadyAction         = iota
 	RoomCreateAction        = iota
 	RoomCreateSuccessAction = iota
 	RoomCreateFailedAction  = iota
@@ -112,6 +113,12 @@ func (c RoomUpdatePacket) ToWriter(w *bytes.Buffer) {
 				if err := binary.Write(w, binary.LittleEndian, room.Players[b].Id); err != nil {
 					panic(err)
 				}
+				if room.Players[b].Ready {
+					w.WriteByte(1)
+				} else {
+					w.WriteByte(0)
+				}
+
 			}
 		}
 	}
@@ -154,6 +161,11 @@ func (c RoomUpdatePacket) FromReader(r *bytes.Reader) any {
 				panic(err)
 			}
 			c.Rooms[i].Players[b].Id = playerId
+			ready, err := r.ReadByte()
+			if err != nil {
+				panic(err)
+			}
+			c.Rooms[i].Players[b].Ready = ready == 1
 		}
 	}
 	return c

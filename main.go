@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/elamre/gomberman/common_system/common_packets"
+	"github.com/elamre/gomberman/game_system"
 	"github.com/elamre/gomberman/lobby_system"
 	packets2 "github.com/elamre/gomberman/lobby_system/lobby_system_packets"
 	local2 "github.com/elamre/gomberman/net/local"
@@ -114,18 +115,25 @@ func main() {
 	ping_packets.Register()
 
 	if !client {
-		server := webrtc2.NewWebrtcHost("192.168.178.43", port)
-		serverDelegator := NewServerDelegator(server)
-		serverDelegator.RegisterSubSystem("serverlobby", lobby_system.NewLobbyServerSystem(server))
-		serverDelegator.RegisterSubSystem("ping", ping_system.NewPingServerSystem())
-		if false {
-			client = true
-		}
-		for {
-			serverDelegator.Update()
-		}
+		go func() {
+			server := webrtc2.NewWebrtcHost("127.0.0.1", port)
+			//server := webrtc2.NewWebrtcHost("192.168.178.43", port)
+			//server := webrtc2.NewWebrtcHost("78.47.36.203", port)
+			serverDelegator := NewServerDelegator(server)
+			serverDelegator.RegisterSubSystem("serverlobby", lobby_system.NewLobbyServerSystem(server))
+			serverDelegator.RegisterSubSystem("ping", ping_system.NewPingServerSystem())
+			serverDelegator.RegisterSubSystem("game", game_system.NewGameServerSystem(nil, server, game_system.GameServerSystemOptions{TicksPerSecond: 5}))
+			if false {
+				client = true
+			}
+			for {
+				serverDelegator.Update()
+			}
+		}()
 	}
-	client := webrtc2.NewWebrtcClient("192.168.178.43", port)
+	//client := webrtc2.NewWebrtcClient("192.168.178.43", port)
+	//client := webrtc2.NewWebrtcClient("78.47.36.203", port)
+	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
 	client.Connect()
 	for !client.IsConnected() {
 	}
@@ -134,7 +142,7 @@ func main() {
 	clientDelegator.RegisterSubSystem("clientlobby", clientLobby)
 	clientDelegator.RegisterSubSystem("ping", ping_system.NewPingClientSystem(client))
 
-	clientLobby.RegisterPlayer("Elmar")
+	clientLobby.RegisterPlayer("Elmar6")
 	clientLobby.SendPacket(packets2.RoomPacket{
 		Action:   packets2.RoomCreateAction,
 		Password: "werwe",

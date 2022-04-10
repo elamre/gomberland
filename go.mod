@@ -3,7 +3,7 @@ module github.com/elamre/gomberman
 go 1.18
 
 require (
-	github.com/elamre/queue v1.1.0
+	github.com/elamre/go_helpers v0.0.1
 	github.com/pion/stun v0.3.5
 	github.com/pion/turn/v2 v2.0.8
 	github.com/pion/webrtc/v3 v3.1.27

@@ -1,23 +1,24 @@
 package common_packets
 
 import (
+	"github.com/elamre/go_helpers/pkg/misc"
+
 	"bytes"
 )
 
 type ChatPacket struct {
+	From    uint32
 	Message string
 }
 
 func (c ChatPacket) ToWriter(w *bytes.Buffer) {
-	_, err := w.Write([]byte(c.Message))
-	if err != nil {
-		panic(err)
-	}
+	misc.CheckErrorRetVal(w.Write([]byte(c.Message)))
+
 }
 
 func (c ChatPacket) FromReader(r *bytes.Reader) any {
 	message := make([]byte, r.Size())
-	r.Read(message)
+	misc.CheckErrorRetVal(r.Read(message))
 	c.Message = string(message)
 	return c
 }

@@ -1,8 +1,8 @@
 package local
 
 import (
+	"github.com/elamre/go_helpers/pkg/queue"
 	"github.com/elamre/gomberman/net/webrtc"
-	"github.com/elamre/queue/pkg/queue"
 )
 
 type FakeNetworkPacket struct {

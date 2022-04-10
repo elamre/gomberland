@@ -22,7 +22,7 @@ func NewPingClientSystem(client net.Client) *PingClientSystem {
 func (p *PingClientSystem) pingCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
 	ping := pack.(ping_packets.PingPacket)
 	p.LastPing = ping.GetPing()
-	log.Printf("Ping: %dms", ping)
+	log.Printf("Ping: %dms", ping.GetPing())
 }
 
 func (p *PingClientSystem) RegisterCallbacks(r common_system.ClientRegulator) {

@@ -47,10 +47,18 @@ func NewLobbyServerSystem(server net.Server) *LobbyServerSystem {
 
 func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_system.ServerRegulator, pack packet_interface.Packet) {
 	t := pack.(packets2.RoomPacket)
+	room := s.nameToRoom[t.Name]
 	switch t.Action {
+	case packets2.RoomReadyAction:
+		user := s.nameToRoom[t.Name].Players[t.UserId]
+		s.nameToRoom[t.Name].Players[t.UserId].Ready = !user.Ready
 	case packets2.RoomStartAction:
-		if s.OnRoomStart != nil {
-			s.OnRoomStart(s.nameToRoom[t.Name])
+		if room.IsReady() {
+			if s.OnRoomStart != nil {
+				s.OnRoomStart(room)
+			}
+		} else {
+			c.WritePacket(common_packets.ChatPacket{Message: "Can't start while not everybody is ready"})
 		}
 	case packets2.RoomCreateAction:
 		name := strings.TrimSpace(strings.ToLower(t.Name))
@@ -63,8 +71,10 @@ func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_syst
 				return
 			}
 		}
+		s.userManage.ClientToPlayer[c].NetPlayer.RoomId = name
 		newRoom := common.NetRoom{
 			RoomName: name,
+			Owner:    s.userManage.ClientToPlayer[c].NetPlayer.Id,
 			Players:  []*common_system.NetPlayer{s.userManage.ClientToPlayer[c].NetPlayer},
 		}
 		s.rooms = append(s.rooms, &newRoom)
@@ -72,6 +82,11 @@ func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_syst
 			Action: packets2.RoomCreateSuccessAction,
 			Name:   name,
 		})
+	case packets2.RoomLeaveAction:
+		if room.Owner == s.userManage.ClientToPlayer[c].NetPlayer.Id {
+			delete(s.nameToRoom, room.RoomName)
+			// Delete the room
+		}
 	}
 }
 

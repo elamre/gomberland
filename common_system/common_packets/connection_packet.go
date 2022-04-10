@@ -3,6 +3,7 @@ package common_packets
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/elamre/go_helpers/pkg/misc"
 )
 
 const (
@@ -30,25 +31,15 @@ func (c ConnectionPacket) ConnectionSuccessful() bool {
 }
 
 func (c ConnectionPacket) ToWriter(w *bytes.Buffer) {
-	if err := binary.Write(w, binary.LittleEndian, c.UserId); err != nil {
-		panic(err)
-	}
-	if err := binary.Write(w, binary.LittleEndian, c.Action); err != nil {
-		panic(err)
-	}
-	w.WriteString(c.Message)
+	misc.CheckError(binary.Write(w, binary.LittleEndian, c.UserId))
+	misc.CheckError(binary.Write(w, binary.LittleEndian, c.Action))
+	misc.CheckErrorRetVal(w.WriteString(c.Message))
 }
 func (c ConnectionPacket) FromReader(r *bytes.Reader) any {
-	if err := binary.Read(r, binary.LittleEndian, &c.UserId); err != nil {
-		panic(err)
-	}
-	if err := binary.Read(r, binary.LittleEndian, &c.Action); err != nil {
-		panic(err)
-	}
+	misc.CheckError(binary.Read(r, binary.LittleEndian, &c.UserId))
+	misc.CheckError(binary.Read(r, binary.LittleEndian, &c.Action))
 	sstring := make([]byte, r.Len())
-	if _, err := r.Read(sstring); err != nil {
-		panic(err)
-	}
+	misc.CheckErrorRetVal(r.Read(sstring))
 	c.Message = string(sstring)
 	return c
 }

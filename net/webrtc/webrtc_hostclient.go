@@ -4,7 +4,6 @@ import (
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
 	"github.com/elamre/gomberman/net/webrtc/internal/webrtc_server"
-	"log"
 	"time"
 )
 
@@ -31,9 +30,7 @@ func (h *WebrtcHostClient) ReadPacket() (packet packet_interface.Packet, err err
 
 	bytes, data := h.connection.Read()
 	if data {
-		log.Printf("DATA")
 		rawPack := RawPacketFrom(bytes)
-		log.Printf("Data: %+v", rawPack)
 		return rawPack.ContainingPacket, nil
 	}
 	return nil, nil

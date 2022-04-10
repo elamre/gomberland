@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/elamre/gomberman/net/packet_interface"
 	"github.com/elamre/gomberman/net/webrtc/internal/webrtc_client"
-	"log"
 	"time"
 )
 
@@ -65,7 +64,6 @@ func (w *WebrtcClient) GotPacket() bool {
 
 func (w *WebrtcClient) ReadPacket() (packet_interface.Packet, error) {
 	if data, success := w.client.Read(); success {
-		log.Printf("Data: % 02x", data)
 		rawPacket := RawPacketFrom(data)
 		return rawPacket.ContainingPacket, nil
 	}

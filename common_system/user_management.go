@@ -1,6 +1,7 @@
 package common_system
 
 import (
+	"github.com/elamre/go_helpers/pkg/slice_helpers"
 	"github.com/elamre/gomberman/common_system/common_packets"
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
@@ -47,6 +48,7 @@ func (u *UserManagement) BroadcastFilter(pack packet_interface.Packet, filter fu
 func (u *UserManagement) OnConnection(client net.ServerClient) {
 	u.playersAdjustMutex.Lock()
 	defer u.playersAdjustMutex.Unlock()
+	log.Printf("OnConnection\n%+v\n%+v\n%+v\n%+v\n%+v", u.players, u.IdToClient, u.NameToClient, u.ClientToPlayer, u.PlayerToClient)
 	netPlayer := &ServerPlayer{Client: client, NetPlayer: &NetPlayer{}}
 	u.players = append(u.players, netPlayer)
 	u.PlayerToClient[netPlayer] = client
@@ -56,29 +58,31 @@ func (u *UserManagement) OnConnection(client net.ServerClient) {
 func (u *UserManagement) OnDisconnection(client net.ServerClient) {
 	u.playersAdjustMutex.Lock()
 	defer u.playersAdjustMutex.Unlock()
-	// TODO check this out
-	for i := 0; i < len(u.players); i++ {
-		if u.players[i] == u.ClientToPlayer[client] {
-			if i == len(u.players)-1 {
-				u.players = u.players[:i-1]
-			} else {
-				u.players = append(u.players[:i], u.players[i+1:]...)
-
-			}
-			break
-		}
+	tempList := slice_helpers.RemoveFromList[*ServerPlayer](u.ClientToPlayer[client], u.players)
+	if tempList == nil {
+		log.Println("client not found")
+		return
 	}
+	u.players = tempList
+
 	serverClient := u.ClientToPlayer[client]
 
 	if serverClient.NetPlayer.HasRegistered {
+		serverClient.NetPlayer.HasRegistered = false
 		delete(u.NameToClient, serverClient.NetPlayer.Name)
 		delete(u.IdToClient, serverClient.NetPlayer.Id)
+	} else {
+		log.Println("we were never registered")
 	}
 	delete(u.ClientToPlayer, client)
 	delete(u.PlayerToClient, serverClient)
+	log.Printf("Disconnected, current players: %+v", u.ClientToPlayer)
 }
 
 func (u *UserManagement) HandleConnectionPacket(connection net.ServerClient, pack common_packets.ConnectionPacket) {
+	u.playersAdjustMutex.Lock()
+	defer u.playersAdjustMutex.Unlock()
+	log.Printf("HandleConnection\n%+v\n%+v\n%+v\n%+v\n%+v", u.players, u.IdToClient, u.NameToClient, u.ClientToPlayer, u.PlayerToClient)
 	log.Printf("New request: %+v", pack)
 	player := u.ClientToPlayer[connection]
 	if player.NetPlayer.HasRegistered {
@@ -106,8 +110,10 @@ func (u *UserManagement) HandleConnectionPacket(connection net.ServerClient, pac
 		})
 		return
 	}
-	u.playersAdjustMutex.Lock()
-	defer u.playersAdjustMutex.Unlock()
+	player.NetPlayer.HasRegistered = true
+	player.NetPlayer.Name = name
+	player.NetPlayer.Id = u.clientIdx
+
 	u.IdToClient[u.clientIdx] = player
 	u.NameToClient[name] = player
 
