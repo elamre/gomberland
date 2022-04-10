@@ -104,18 +104,22 @@ func benchMark() {
 	log.Printf("Took: %vms", time.Now().Sub(start).Milliseconds())
 }
 
+var client = false
+
 func main() {
 	packets.Register()
 	packets2.Register()
 
-	serverLobby := lobby_system.NewLobbyServerSystem(webrtc2.NewWebrtcHost("127.0.0.1", port))
-
-	go func() {
+	if !client {
+		serverLobby := lobby_system.NewLobbyServerSystem(webrtc2.NewWebrtcHost("192.168.178.43", port))
+		if false {
+			client = true
+		}
 		for {
 			time.Sleep(time.Second)
 			serverLobby.Update()
 		}
-	}()
+	}
 	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
 	client.Connect()
 	for !client.IsConnected() {
