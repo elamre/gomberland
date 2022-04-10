@@ -15,7 +15,7 @@ const (
 	hasLogging = true
 )
 
-// stunLogger wraps a PacketConn and prints incoming/outgoing STUN packets
+// stunLogger wraps a PacketConn and prints incoming/outgoing STUN game_system_packets
 // This pattern could be used to capture/inspect/modify data as well
 type stunLogger struct {
 	net.PacketConn
@@ -114,7 +114,7 @@ func ListenAndStart(publicIP string) (*turn.Server, error) {
 		// https://bloggeek.me/google-free-turn-server/
 		//
 		// My current assumption is that we do NOT want it for low-latency games as it relays
-		// all TCP packets through it. TCP is slow and not ideal for real-time game designs
+		// all TCP game_system_packets through it. TCP is slow and not ideal for real-time game designs
 		// like say Overwatch.
 		//
 		// ListenerConfigs: []turn.ListenerConfig{

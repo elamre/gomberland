@@ -1,4 +1,4 @@
-package packets
+package ping_packets
 
 import (
 	"bytes"

@@ -2,8 +2,8 @@ package lobby_system
 
 import (
 	"github.com/elamre/gomberman/common_system"
-	"github.com/elamre/gomberman/common_system/packets"
-	packets2 "github.com/elamre/gomberman/lobby_system/packets"
+	"github.com/elamre/gomberman/common_system/common_packets"
+	packets2 "github.com/elamre/gomberman/lobby_system/lobby_system_packets"
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
 	"log"
@@ -25,7 +25,7 @@ func (c *LobbyClientSystem) SendPacket(pack packet_interface.Packet) any {
 
 func (c *LobbyClientSystem) RegisterPlayer(name string) {
 	if !c.curPlayer.HasRegistered {
-		c.client.WritePacket(packets.ConnectionPacket{
+		c.client.WritePacket(common_packets.ConnectionPacket{
 			Action:  0,
 			Message: name,
 		})
@@ -43,11 +43,11 @@ func (c *LobbyClientSystem) Update() {
 		panic(err)
 	}
 	switch t := pack.(type) {
-	case packets.ConnectionPacket:
-		if t.Action == packets.ConnectionRefusedAction {
+	case common_packets.ConnectionPacket:
+		if t.Action == common_packets.ConnectionRefusedAction {
 			c.curPlayer.HasRegistered = false
 			log.Printf("Unable to register: %s", t.Message)
-		} else if t.Action == packets.ConnectionAcceptedAction {
+		} else if t.Action == common_packets.ConnectionAcceptedAction {
 			c.curPlayer.Id = t.UserId
 			log.Println("accepted")
 		} else {

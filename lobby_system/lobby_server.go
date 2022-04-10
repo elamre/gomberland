@@ -2,11 +2,11 @@ package lobby_system
 
 import (
 	"github.com/elamre/gomberman/common_system"
-	"github.com/elamre/gomberman/common_system/packets"
+	"github.com/elamre/gomberman/common_system/common_packets"
 	"github.com/elamre/gomberman/lobby_system/common"
-	packets2 "github.com/elamre/gomberman/lobby_system/packets"
+	packets2 "github.com/elamre/gomberman/lobby_system/lobby_system_packets"
 	"github.com/elamre/gomberman/net"
-	"log"
+	"github.com/elamre/gomberman/net/packet_interface"
 	"strings"
 	"time"
 )
@@ -45,50 +45,47 @@ func NewLobbyServerSystem(server net.Server) *LobbyServerSystem {
 	return s
 }
 
-func (s *LobbyServerSystem) Update() {
-	s.server.ClientIterator(func(c net.ServerClient) {
-		pack, err := c.ReadPacket()
-		if err != nil {
-			log.Printf("Error reading: %v", err)
-			return
+func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_system.ServerRegulator, pack packet_interface.Packet) {
+	t := pack.(packets2.RoomPacket)
+	switch t.Action {
+	case packets2.RoomStartAction:
+		if s.OnRoomStart != nil {
+			s.OnRoomStart(s.nameToRoom[t.Name])
 		}
-		if pack != nil {
-			switch t := pack.(type) {
-			case packets.ChatPacket:
-			case packets2.RoomPacket:
-				switch t.Action {
-				case packets2.RoomStartAction:
-					if s.OnRoomStart != nil {
-						s.OnRoomStart(s.nameToRoom[t.Name])
-					}
-				case packets2.RoomCreateAction:
-					name := strings.TrimSpace(strings.ToLower(t.Name))
-					for _, r := range s.rooms {
-						if strings.Compare(r.RoomName, name) == 0 {
-							c.WritePacket(packets2.RoomPacket{
-								Action: packets2.RoomCreateFailedAction,
-								Name:   "Room already exists",
-							})
-							return
-						}
-					}
-					newRoom := common.NetRoom{
-						RoomName: name,
-						Players:  []*common_system.NetPlayer{s.userManage.ClientToPlayer[c].NetPlayer},
-					}
-					s.rooms = append(s.rooms, &newRoom)
-					c.WritePacket(packets2.RoomPacket{
-						Action: packets2.RoomCreateSuccessAction,
-						Name:   name,
-					})
-				}
-			case packets.ConnectionPacket:
-				s.userManage.HandleConnectionPacket(c, t)
-			default:
-				log.Printf("unhandled type: %T", t)
+	case packets2.RoomCreateAction:
+		name := strings.TrimSpace(strings.ToLower(t.Name))
+		for _, r := range s.rooms {
+			if strings.Compare(r.RoomName, name) == 0 {
+				c.WritePacket(packets2.RoomPacket{
+					Action: packets2.RoomCreateFailedAction,
+					Name:   "Room already exists",
+				})
+				return
 			}
 		}
-	})
+		newRoom := common.NetRoom{
+			RoomName: name,
+			Players:  []*common_system.NetPlayer{s.userManage.ClientToPlayer[c].NetPlayer},
+		}
+		s.rooms = append(s.rooms, &newRoom)
+		c.WritePacket(packets2.RoomPacket{
+			Action: packets2.RoomCreateSuccessAction,
+			Name:   name,
+		})
+	}
+}
+
+func (s *LobbyServerSystem) connectionCallback(c net.ServerClient, d common_system.ServerRegulator, pack packet_interface.Packet) {
+	t := pack.(common_packets.ConnectionPacket)
+	s.userManage.HandleConnectionPacket(c, t)
+}
+
+func (s *LobbyServerSystem) RegisterCallbacks(r common_system.ServerRegulator) {
+	r.RegisterPacketCallback(s.roomPacketCallback, packets2.RoomPacket{})
+	r.RegisterPacketCallback(s.connectionCallback, common_packets.ConnectionPacket{})
+}
+
+func (s *LobbyServerSystem) Update() {
 	if time.Since(s.roomUpdateTimer) >= 500*time.Millisecond {
 		s.roomUpdateTimer = time.Now()
 		pack := packets2.RoomUpdatePacket{Rooms: s.rooms}

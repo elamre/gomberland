@@ -1,4 +1,4 @@
-package packets
+package common_packets
 
 import (
 	"bytes"

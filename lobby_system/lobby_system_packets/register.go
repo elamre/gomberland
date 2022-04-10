@@ -1,4 +1,4 @@
-package packets
+package lobby_system_packets
 
 import "github.com/elamre/gomberman/net/packet_interface"
 

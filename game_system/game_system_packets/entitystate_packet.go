@@ -1,4 +1,4 @@
-package packets
+package game_system_packets
 
 import (
 	"bytes"

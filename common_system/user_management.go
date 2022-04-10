@@ -1,7 +1,7 @@
 package common_system
 
 import (
-	"github.com/elamre/gomberman/common_system/packets"
+	"github.com/elamre/gomberman/common_system/common_packets"
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
 	"log"
@@ -78,30 +78,30 @@ func (u *UserManagement) OnDisconnection(client net.ServerClient) {
 	delete(u.PlayerToClient, serverClient)
 }
 
-func (u *UserManagement) HandleConnectionPacket(connection net.ServerClient, pack packets.ConnectionPacket) {
+func (u *UserManagement) HandleConnectionPacket(connection net.ServerClient, pack common_packets.ConnectionPacket) {
 	log.Printf("New request: %+v", pack)
 	player := u.ClientToPlayer[connection]
 	if player.NetPlayer.HasRegistered {
-		connection.WritePacket(packets.ConnectionPacket{
+		connection.WritePacket(common_packets.ConnectionPacket{
 			UserId:  0,
-			Action:  packets.ConnectionRefusedAction,
+			Action:  common_packets.ConnectionRefusedAction,
 			Message: "Already registered",
 		})
 		return
 	}
 	if len(pack.Message) == 0 {
-		connection.WritePacket(packets.ConnectionPacket{
+		connection.WritePacket(common_packets.ConnectionPacket{
 			UserId:  0,
-			Action:  packets.ConnectionRefusedAction,
+			Action:  common_packets.ConnectionRefusedAction,
 			Message: "No name given",
 		})
 		return
 	}
 	name := strings.TrimSpace(strings.ToLower(pack.Message))
 	if _, ok := u.NameToClient[name]; ok {
-		connection.WritePacket(packets.ConnectionPacket{
+		connection.WritePacket(common_packets.ConnectionPacket{
 			UserId:  0,
-			Action:  packets.ConnectionRefusedAction,
+			Action:  common_packets.ConnectionRefusedAction,
 			Message: "Name already registered",
 		})
 		return
@@ -111,7 +111,7 @@ func (u *UserManagement) HandleConnectionPacket(connection net.ServerClient, pac
 	u.IdToClient[u.clientIdx] = player
 	u.NameToClient[name] = player
 
-	pack.Action = packets.ConnectionAcceptedAction
+	pack.Action = common_packets.ConnectionAcceptedAction
 	pack.Message = name
 	pack.UserId = u.clientIdx
 	connection.WritePacket(pack)

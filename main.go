@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/elamre/gomberman/common_system/packets"
+	"github.com/elamre/gomberman/common_system/common_packets"
 	"github.com/elamre/gomberman/lobby_system"
-	packets2 "github.com/elamre/gomberman/lobby_system/packets"
+	packets2 "github.com/elamre/gomberman/lobby_system/lobby_system_packets"
 	local2 "github.com/elamre/gomberman/net/local"
 	webrtc2 "github.com/elamre/gomberman/net/webrtc"
+	"github.com/elamre/gomberman/ping_system"
 	"log"
 	"time"
 )
@@ -96,8 +97,8 @@ func benchMark() {
 	}()
 
 	start := time.Now()
-	/*	for i := 0; i < packets; i++ {
-		cclient.Write(packets.ChatPacket{
+	/*	for i := 0; i < game_system_packets; i++ {
+		cclient.Write(game_system_packets.ChatPacket{
 			Message: "Test",
 		})
 	}*/
@@ -107,25 +108,27 @@ func benchMark() {
 var client = false
 
 func main() {
-	packets.Register()
+	common_packets.Register()
 	packets2.Register()
 
 	if !client {
-		serverLobby := lobby_system.NewLobbyServerSystem(webrtc2.NewWebrtcHost("192.168.178.43", port))
+		server := webrtc2.NewWebrtcHost("192.168.178.43", port)
+		serverDelegator := NewServerDelegator(server)
+		serverDelegator.RegisterSubSystem("serverlobby", lobby_system.NewLobbyServerSystem(server))
+		serverDelegator.RegisterSubSystem("ping", ping_system.NewPingServerSystem())
 		if false {
 			client = true
 		}
 		for {
-			time.Sleep(time.Second)
-			serverLobby.Update()
+			serverDelegator.Update()
 		}
 	}
-	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
+	client := webrtc2.NewWebrtcClient("192.168.178.43", port)
 	client.Connect()
 	for !client.IsConnected() {
 	}
 	clientLobby := lobby_system.NewLobbyClientSystem(client)
-
+	pingSystem := ping_system.NewPingClientSystem(client)
 	clientLobby.RegisterPlayer("Elmar")
 	clientLobby.SendPacket(packets2.RoomPacket{
 		Action:   packets2.RoomCreateAction,
@@ -134,20 +137,15 @@ func main() {
 	})
 	go func() {
 		for {
-			time.Sleep(time.Second)
 			clientLobby.Update()
-			clientLobby.SendPacket(packets2.RoomPacket{
-				Action:   packets2.RoomCreateAction,
-				Password: "werwe",
-				Name:     "ElmaR2",
-			})
+			pingSystem.Update()
 		}
 	}()
 	time.Sleep(10 * time.Second)
 }
 
 func main2() {
-	packets.Register()
+	common_packets.Register()
 	packets2.Register()
 
 	time.Sleep(time.Second)
@@ -158,7 +156,7 @@ func main2() {
 	go func() {
 		pack := cserver.GetPacket()
 		log.Printf("Server received: %+v", pack)
-		cserver.Write(packets.ConnectionPacket{
+		cserver.Write(common_packets.ConnectionPacket{
 			UserId:  1,
 			Action:  2,
 			Message: "Registered",
@@ -167,12 +165,12 @@ func main2() {
 		log.Printf("Server received: %+v", pack)
 	}()
 
-	cclient.Write(packets.NewRegisterPacket("Elmar"))
+	cclient.Write(common_packets.NewRegisterPacket("Elmar"))
 	time.Sleep(time.Second)
 	pack := cclient.WaitForPacket()
 	log.Printf("Client got: %+v", pack)
 	time.Sleep(time.Second)
-	cclient.Write(packets.ChatPacket{Message: "Registered!"})
+	cclient.Write(common_packets.ChatPacket{Message: "Registered!"})
 
 	time.Sleep(10 * time.Second)
 }
