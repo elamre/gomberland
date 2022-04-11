@@ -3,6 +3,7 @@ package common_packets
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/elamre/go_helpers/pkg/misc"
 )
 
@@ -16,10 +17,28 @@ const (
 
 type ConnectionAction uint32
 
+func (c ConnectionAction) String() string {
+	switch c {
+	case ConnectionRegisterAction:
+		return "ConnectionRegisterAction"
+	case ConnectionAcceptedAction:
+		return "ConnectionAcceptedAction"
+	case ConnectionRefusedAction:
+		return "ConnectionRefusedAction"
+	case ConnectionNewRegisteredAction:
+		return "ConnectionNewRegisteredAction"
+	}
+	return "unknown"
+}
+
 type ConnectionPacket struct {
 	UserId  uint32
 	Action  ConnectionAction
 	Message string
+}
+
+func (c ConnectionPacket) String() string {
+	return fmt.Sprintf("Id: %d Message: %s Action: %s", c.UserId, c.Message, c.Action.String())
 }
 
 func NewRegisterPacket(name string) ConnectionPacket {

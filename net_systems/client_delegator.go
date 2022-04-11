@@ -1,9 +1,9 @@
-package main
+package net_systems
 
 import (
-	. "github.com/elamre/gomberman/common_system"
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
+	. "github.com/elamre/gomberman/net_systems/common_system"
 	"reflect"
 )
 

@@ -5,7 +5,7 @@ import (
 	"github.com/elamre/gomberman/net/packet_interface"
 )
 
-type PacketServerCallback = func(c net.ServerClient, d ServerRegulator, pack packet_interface.Packet)
+type PacketServerCallback = func(c *ServerPlayer, d ServerRegulator, pack packet_interface.Packet)
 type PacketClientCallback = func(c net.Client, d ClientRegulator, pack packet_interface.Packet)
 
 type ServerSubSystem interface {

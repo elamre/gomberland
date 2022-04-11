@@ -1,22 +1,22 @@
 package lobby_system
 
 import (
-	"github.com/elamre/gomberman/common_system"
-	"github.com/elamre/gomberman/common_system/common_packets"
-	packets2 "github.com/elamre/gomberman/lobby_system/lobby_system_packets"
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
+	common_system2 "github.com/elamre/gomberman/net_systems/common_system"
+	"github.com/elamre/gomberman/net_systems/common_system/common_packets"
+	packets2 "github.com/elamre/gomberman/net_systems/lobby_system/lobby_system_packets"
 	"log"
 )
 
 type LobbyClientSystem struct {
 	OnRegisteredAction func()
-	curPlayer          *common_system.NetPlayer
+	curPlayer          *common_system2.NetPlayer
 	client             net.Client
 }
 
 func NewLobbyClientSystem(client net.Client) *LobbyClientSystem {
-	c := &LobbyClientSystem{client: client, curPlayer: &common_system.NetPlayer{}}
+	c := &LobbyClientSystem{client: client, curPlayer: &common_system2.NetPlayer{}}
 	return c
 }
 
@@ -40,8 +40,9 @@ func (c *LobbyClientSystem) RegisterPlayer(name string) {
 	}
 }
 
-func (p *LobbyClientSystem) connectionCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
+func (p *LobbyClientSystem) connectionCallback(c net.Client, d common_system2.ClientRegulator, pack packet_interface.Packet) {
 	t := pack.(common_packets.ConnectionPacket)
+	log.Printf("Client received: %s", t.String())
 	if t.Action == common_packets.ConnectionRefusedAction {
 		p.curPlayer.HasRegistered = false
 		log.Printf("Unable to register: %s", t.Message)
@@ -55,7 +56,7 @@ func (p *LobbyClientSystem) connectionCallback(c net.Client, d common_system.Cli
 		log.Printf("Player with name: %s registered (%d)", t.Message, t.UserId)
 	}
 }
-func (lp *LobbyClientSystem) roomupdateCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
+func (lp *LobbyClientSystem) roomupdateCallback(c net.Client, d common_system2.ClientRegulator, pack packet_interface.Packet) {
 	/*	t := pack.(packets2.RoomUpdatePacket)
 		for _, room := range t.Rooms {
 			log.Printf("Room: %s", room.RoomName)
@@ -67,11 +68,11 @@ func (lp *LobbyClientSystem) roomupdateCallback(c net.Client, d common_system.Cl
 		}*/
 }
 
-func (lp *LobbyClientSystem) roomPacketCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
+func (lp *LobbyClientSystem) roomPacketCallback(c net.Client, d common_system2.ClientRegulator, pack packet_interface.Packet) {
 	log.Printf("Received: %+v", pack)
 }
 
-func (p *LobbyClientSystem) RegisterCallbacks(r common_system.ClientRegulator) {
+func (p *LobbyClientSystem) RegisterCallbacks(r common_system2.ClientRegulator) {
 	r.RegisterPacketCallback(p.connectionCallback, common_packets.ConnectionPacket{})
 	r.RegisterPacketCallback(p.roomupdateCallback, packets2.RoomUpdatePacket{})
 	r.RegisterPacketCallback(p.roomPacketCallback, packets2.RoomPacket{})

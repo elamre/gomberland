@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/elamre/gomberman/common_system"
+	"github.com/elamre/gomberman/net_systems/common_system"
 	"log"
 	"sync"
 )

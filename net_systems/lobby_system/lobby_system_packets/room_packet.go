@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/elamre/gomberman/common_system"
-	"github.com/elamre/gomberman/lobby_system/common"
+	"github.com/elamre/gomberman/net_systems/common_system"
+	"github.com/elamre/gomberman/net_systems/lobby_system/common"
 )
 
 const (
@@ -16,6 +16,7 @@ const (
 	RoomLeaveAction         = iota
 	RoomReadyAction         = iota
 	RoomCreateAction        = iota
+	RoomDeleteAction        = iota
 	RoomCreateSuccessAction = iota
 	RoomCreateFailedAction  = iota
 	RoomUpdateAction        = iota
@@ -36,6 +37,8 @@ func (r RoomAction) String() string {
 		return "RoomReadyAction"
 	case RoomCreateAction:
 		return "RoomCreateAction"
+	case RoomDeleteAction:
+		return "RoomDeleteAction"
 	case RoomCreateSuccessAction:
 		return "RoomCreateSuccessAction"
 	case RoomCreateFailedAction:

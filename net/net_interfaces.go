@@ -15,8 +15,10 @@ type ClientOptions struct {
 type Server interface {
 	Start() any
 	Close() any
-	SetOnConnection(func(client ServerClient))
-	SetOnDisconnection(func(client ServerClient))
+	AddConnectionCallback(func(client ServerClient))
+	RemoveConnectionCallback(func(client ServerClient))
+	AddDisconnectionCallback(func(client ServerClient))
+	RemoveDisconnectionCallback(func(client ServerClient))
 	BroadcastPacket(packet packet_interface.Packet)
 	ClientIterator(iterator func(c ServerClient))
 }
