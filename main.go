@@ -142,12 +142,17 @@ func main() {
 	clientDelegator.RegisterSubSystem("clientlobby", clientLobby)
 	clientDelegator.RegisterSubSystem("ping", ping_system.NewPingClientSystem(client))
 
-	clientLobby.RegisterPlayer("Elmar6")
-	clientLobby.SendPacket(packets2.RoomPacket{
-		Action:   packets2.RoomCreateAction,
-		Password: "werwe",
-		Name:     "ElmaR",
-	})
+	clientLobby.RegisterPlayer("Elmar")
+	clientLobby.OnRegisteredAction = func() {
+
+		clientLobby.SendRoomPacket(packets2.RoomPacket{
+			Action:   packets2.RoomCreateAction,
+			Password: "werwe",
+			Name:     "ElmaR",
+		})
+		clientLobby.SendRoomPacket(packets2.RoomPacket{Action: packets2.RoomReadyAction, Name: "ElmaR"})
+		clientLobby.SendRoomPacket(packets2.RoomPacket{Action: packets2.RoomStartAction, Name: "ElmaR"})
+	}
 	go func() {
 		for {
 			clientDelegator.Update()

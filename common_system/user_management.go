@@ -48,7 +48,6 @@ func (u *UserManagement) BroadcastFilter(pack packet_interface.Packet, filter fu
 func (u *UserManagement) OnConnection(client net.ServerClient) {
 	u.playersAdjustMutex.Lock()
 	defer u.playersAdjustMutex.Unlock()
-	log.Printf("OnConnection\n%+v\n%+v\n%+v\n%+v\n%+v", u.players, u.IdToClient, u.NameToClient, u.ClientToPlayer, u.PlayerToClient)
 	netPlayer := &ServerPlayer{Client: client, NetPlayer: &NetPlayer{}}
 	u.players = append(u.players, netPlayer)
 	u.PlayerToClient[netPlayer] = client
@@ -76,14 +75,12 @@ func (u *UserManagement) OnDisconnection(client net.ServerClient) {
 	}
 	delete(u.ClientToPlayer, client)
 	delete(u.PlayerToClient, serverClient)
-	log.Printf("Disconnected, current players: %+v", u.ClientToPlayer)
 }
 
 func (u *UserManagement) HandleConnectionPacket(connection net.ServerClient, pack common_packets.ConnectionPacket) {
 	u.playersAdjustMutex.Lock()
 	defer u.playersAdjustMutex.Unlock()
-	log.Printf("HandleConnection\n%+v\n%+v\n%+v\n%+v\n%+v", u.players, u.IdToClient, u.NameToClient, u.ClientToPlayer, u.PlayerToClient)
-	log.Printf("New request: %+v", pack)
+
 	player := u.ClientToPlayer[connection]
 	if player.NetPlayer.HasRegistered {
 		connection.WritePacket(common_packets.ConnectionPacket{

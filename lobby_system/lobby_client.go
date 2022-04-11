@@ -10,13 +10,20 @@ import (
 )
 
 type LobbyClientSystem struct {
-	curPlayer *common_system.NetPlayer
-	client    net.Client
+	OnRegisteredAction func()
+	curPlayer          *common_system.NetPlayer
+	client             net.Client
 }
 
 func NewLobbyClientSystem(client net.Client) *LobbyClientSystem {
 	c := &LobbyClientSystem{client: client, curPlayer: &common_system.NetPlayer{}}
 	return c
+}
+
+func (c *LobbyClientSystem) SendRoomPacket(pack packets2.RoomPacket) any {
+	pack.UserId = c.curPlayer.Id
+	return c.client.WritePacket(pack)
+
 }
 
 func (c *LobbyClientSystem) SendPacket(pack packet_interface.Packet) any {
@@ -26,7 +33,7 @@ func (c *LobbyClientSystem) SendPacket(pack packet_interface.Packet) any {
 func (c *LobbyClientSystem) RegisterPlayer(name string) {
 	if !c.curPlayer.HasRegistered {
 		c.client.WritePacket(common_packets.ConnectionPacket{
-			Action:  0,
+			Action:  common_packets.ConnectionRegisterAction,
 			Message: name,
 		})
 		c.curPlayer.HasRegistered = true
@@ -40,6 +47,9 @@ func (p *LobbyClientSystem) connectionCallback(c net.Client, d common_system.Cli
 		log.Printf("Unable to register: %s", t.Message)
 	} else if t.Action == common_packets.ConnectionAcceptedAction {
 		p.curPlayer.Id = t.UserId
+		if p.OnRegisteredAction != nil {
+			p.OnRegisteredAction()
+		}
 		log.Println("accepted")
 	} else {
 		log.Printf("Player with name: %s registered (%d)", t.Message, t.UserId)
@@ -57,9 +67,14 @@ func (lp *LobbyClientSystem) roomupdateCallback(c net.Client, d common_system.Cl
 		}*/
 }
 
+func (lp *LobbyClientSystem) roomPacketCallback(c net.Client, d common_system.ClientRegulator, pack packet_interface.Packet) {
+	log.Printf("Received: %+v", pack)
+}
+
 func (p *LobbyClientSystem) RegisterCallbacks(r common_system.ClientRegulator) {
 	r.RegisterPacketCallback(p.connectionCallback, common_packets.ConnectionPacket{})
 	r.RegisterPacketCallback(p.roomupdateCallback, packets2.RoomUpdatePacket{})
+	r.RegisterPacketCallback(p.roomPacketCallback, packets2.RoomPacket{})
 }
 
 func (c *LobbyClientSystem) Update() {

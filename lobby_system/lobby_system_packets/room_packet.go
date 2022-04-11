@@ -3,6 +3,7 @@ package lobby_system_packets
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/elamre/gomberman/common_system"
 	"github.com/elamre/gomberman/lobby_system/common"
 )
@@ -21,6 +22,32 @@ const (
 	RoomStartAction         = iota
 )
 
+func (r RoomAction) String() string {
+	switch r {
+	case RoomJoinAction:
+		return "RoomJoinAction"
+	case RoomJoinSuccessAction:
+		return "RoomJoinSuccessAction"
+	case RoomJoinFailedAction:
+		return "RoomJoinFailedAction"
+	case RoomLeaveAction:
+		return "RoomLeaveAction"
+	case RoomReadyAction:
+		return "RoomReadyAction"
+	case RoomCreateAction:
+		return "RoomCreateAction"
+	case RoomCreateSuccessAction:
+		return "RoomCreateSuccessAction"
+	case RoomCreateFailedAction:
+		return "RoomCreateFailedAction"
+	case RoomUpdateAction:
+		return "RoomUpdateAction"
+	case RoomStartAction:
+		return "RoomStartAction"
+	}
+	return "unknown"
+}
+
 type RoomAction uint32
 
 type RoomPacket struct {
@@ -28,6 +55,10 @@ type RoomPacket struct {
 	Action   RoomAction
 	Password string
 	Name     string
+}
+
+func (r RoomPacket) String() string {
+	return fmt.Sprintf("Name: %s Pass: %s Action: %s Owner: %d", r.Name, r.Password, r.Action.String(), r.UserId)
 }
 
 func (c RoomPacket) FromReader(r *bytes.Reader) any {

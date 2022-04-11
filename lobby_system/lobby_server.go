@@ -7,6 +7,7 @@ import (
 	packets2 "github.com/elamre/gomberman/lobby_system/lobby_system_packets"
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
+	"log"
 	"strings"
 	"time"
 )
@@ -47,11 +48,16 @@ func NewLobbyServerSystem(server net.Server) *LobbyServerSystem {
 
 func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_system.ServerRegulator, pack packet_interface.Packet) {
 	t := pack.(packets2.RoomPacket)
-	room := s.nameToRoom[t.Name]
+	log.Printf("Server room: %s", t.String())
+	name := strings.TrimSpace(strings.ToLower(t.Name))
+	room := s.nameToRoom[name]
 	switch t.Action {
 	case packets2.RoomReadyAction:
-		user := s.nameToRoom[t.Name].Players[t.UserId]
-		s.nameToRoom[t.Name].Players[t.UserId].Ready = !user.Ready
+		// Check for illegal action
+		log.Printf("%+v", s.nameToRoom)
+		log.Printf("%+v", s.nameToRoom[name])
+		user := s.nameToRoom[name].Players[t.UserId]
+		s.nameToRoom[name].Players[t.UserId].Ready = !user.Ready
 	case packets2.RoomStartAction:
 		if room.IsReady() {
 			if s.OnRoomStart != nil {
@@ -61,7 +67,6 @@ func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_syst
 			c.WritePacket(common_packets.ChatPacket{Message: "Can't start while not everybody is ready"})
 		}
 	case packets2.RoomCreateAction:
-		name := strings.TrimSpace(strings.ToLower(t.Name))
 		for _, r := range s.rooms {
 			if strings.Compare(r.RoomName, name) == 0 {
 				c.WritePacket(packets2.RoomPacket{
@@ -77,6 +82,7 @@ func (s *LobbyServerSystem) roomPacketCallback(c net.ServerClient, d common_syst
 			Owner:    s.userManage.ClientToPlayer[c].NetPlayer.Id,
 			Players:  []*common_system.NetPlayer{s.userManage.ClientToPlayer[c].NetPlayer},
 		}
+		s.nameToRoom[name] = &newRoom
 		s.rooms = append(s.rooms, &newRoom)
 		c.WritePacket(packets2.RoomPacket{
 			Action: packets2.RoomCreateSuccessAction,
