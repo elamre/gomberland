@@ -1,65 +1,76 @@
 package main
 
 import (
-	webrtc2 "github.com/elamre/gomberman/net/webrtc"
-	common_packets2 "github.com/elamre/gomberman/net_systems/common_system/common_packets"
-	"github.com/elamre/gomberman/net_systems/lobby_system"
-	"github.com/elamre/gomberman/net_systems/lobby_system/lobby_system_packets"
-	"github.com/elamre/gomberman/net_systems/ping_system"
-	"github.com/elamre/gomberman/net_systems/ping_system/ping_packets"
+	"github.com/elamre/go_helpers/pkg/misc"
+	"github.com/elamre/gomberman/assets"
+	"github.com/elamre/gomberman/game/menu_state"
+	"github.com/elamre/gomberman/game/room_state"
+	"github.com/elamre/tentsuyu"
+	"github.com/hajimehoshi/ebiten/v2"
 	"log"
-	"time"
 )
 
-const port = 50001
+var assetsManager *tentsuyu.AssetsManager
+
+type GomberlandGame struct {
+	game      *tentsuyu.Game
+	curState  tentsuyu.GameState
+	nextState tentsuyu.GameState
+
+	menuState *menu_state.MenuState
+	roomState *room_state.RoomState
+
+	curStateString, nextStateString string
+}
+
+func NewGomberlandGame() *GomberlandGame {
+	g := GomberlandGame{}
+	g.game = misc.CheckErrorRetVal[*tentsuyu.Game](tentsuyu.NewGame(640, 480))
+	g.game.LoadAssetsManager(assets.GetManager)
+	g.game.SetGameStateLoop(func() error {
+		g.checkState()
+		return nil
+	})
+	g.menuState = menu_state.NewMenuState()
+	g.roomState = room_state.NewRoomState()
+	g.nextState = g.menuState
+	return &g
+}
+
+func (g *GomberlandGame) checkState() {
+	switch g.curState {
+	case g.menuState:
+		switch g.curState.Msg() {
+		case menu_state.InMenuState:
+			// Do nothing
+		case menu_state.JoinRoomState:
+			log.Println(" Changing to room ")
+			g.nextState = g.roomState
+		case menu_state.BackState:
+			// TODO close the game
+		default:
+			//Do nothing
+		}
+	case g.roomState:
+		switch g.curState.Msg() {
+		case room_state.InRoomState:
+		// Do nothing
+		case room_state.LaunchGameState:
+			log.Printf("Launching with: %+v", g.roomState.GetSettings())
+		}
+	}
+	if g.curState != g.nextState {
+		if g.curState != nil {
+			g.curState.SetMsg("reset")
+		}
+		g.game.SetGameState(g.nextState)
+		g.curState = g.nextState
+	}
+}
 
 func main() {
-	common_packets2.Register()
-	lobby_system_packets.Register()
-	ping_packets.Register()
-
-	go func() {
-		server := webrtc2.NewWebrtcHost("127.0.0.1", port)
-		/*			userManagement := common_system.NewUserManagement(server)
-					lobby := lobby_system2.NewLobbyServerSystem(userManagement)
-
-					//server := webrtc2.NewWebrtcHost("192.168.178.43", port)
-					//server := webrtc2.NewWebrtcHost("78.47.36.203", port)
-					serverDelegator := net_systems.NewServerDelegator(server)
-					serverDelegator.RegisterSubSystem("users", userManagement)
-					serverDelegator.RegisterSubSystem("serverlobby", lobby)
-					serverDelegator.RegisterSubSystem("ping", ping_system.NewPingServerSystem())
-					serverDelegator.RegisterSubSystem("game", game_system.NewGameServerSystem(nil, server, game_system.GameServerSystemOptions{TicksPerSecond: 1}))*/
-		serverDelegator := CreateServerSystem(server)
-		server.Start()
-
-		for {
-			serverDelegator.Update()
-		}
-	}()
-
-	//client := webrtc2.NewWebrtcClient("192.168.178.43", port)
-	//client := webrtc2.NewWebrtcClient("78.47.36.203", port)
-	client := webrtc2.NewWebrtcClient("127.0.0.1", port)
-	clientDelegator := CreateClientSystem(client)
-	client.Connect()
-	for !client.IsConnected() {
-	}
-	lobby := clientDelegator.GetSubsystem(clientLobbyTag).(*lobby_system.LobbyClientSystem)
-	lobby.RegisterPlayer("Elmar")
-	lobby.OnRegisteredAction = func() {
-		log.Printf("We are registered")
-	}
-	start := time.Now()
-	go func() {
-		for {
-			clientDelegator.Update()
-			if time.Since(start) > time.Second*2 {
-				ping := clientDelegator.GetSubsystem(clientPingTag).(*ping_system.PingClientSystem)
-				log.Printf("Ping: %dus", ping.GetPing().Microseconds())
-				start = time.Now()
-			}
-		}
-	}()
-	time.Sleep(10 * time.Second)
+	defer assets.CleanUp()
+	gomberland := NewGomberlandGame()
+	ebiten.SetWindowSize(640, 480)
+	ebiten.RunGame(gomberland.game)
 }

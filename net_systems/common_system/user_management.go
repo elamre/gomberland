@@ -37,6 +37,7 @@ func NewUserManagement(server net.Server) *UserManagement {
 		IdToClient:     make(map[uint32]*ServerPlayer),
 		ClientToPlayer: make(map[net.ServerClient]*ServerPlayer),
 		PlayerToClient: make(map[*ServerPlayer]net.ServerClient),
+		clientIdx:      3,
 	}
 	server.AddConnectionCallback(s.OnConnection)
 	server.AddDisconnectionCallback(s.OnDisconnection)
