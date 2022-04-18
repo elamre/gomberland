@@ -6,7 +6,7 @@ import (
 	"github.com/elamre/gomberman/net"
 	"github.com/elamre/gomberman/net/packet_interface"
 	. "github.com/elamre/gomberman/net_systems/common_system"
-	"log"
+	"github.com/elamre/logger/pkg/logger"
 	"reflect"
 	"sync"
 )
@@ -19,6 +19,8 @@ type ServerDelegator struct {
 
 	subSystems         map[string]ServerSubSystem
 	subSystemsCallback map[reflect.Type][]PacketServerCallback
+
+	l *logger.Logger
 }
 
 func NewServerDelegator(server net.Server) *ServerDelegator {
@@ -27,6 +29,7 @@ func NewServerDelegator(server net.Server) *ServerDelegator {
 		server:             server,
 		netPlayers:         make([]*ServerPlayer, 0),
 		subSystemsCallback: make(map[reflect.Type][]PacketServerCallback),
+		l:                  logger.NewLogger(),
 	}
 	server.AddConnectionCallback(s.clientConnect)
 	server.AddDisconnectionCallback(s.clientDisconnect)
@@ -41,7 +44,7 @@ func (s *ServerDelegator) clientConnect(client net.ServerClient) {
 		Client:    client,
 	}
 	s.netPlayers = append(s.netPlayers, sp)
-	log.Printf("Client connected! %+v [%+v]", sp, s.netPlayers)
+	s.l.LogInfof("Client connected! %+v [%+v]", sp, s.netPlayers)
 }
 
 func (s *ServerDelegator) clientDisconnect(client net.ServerClient) {
@@ -51,7 +54,7 @@ func (s *ServerDelegator) clientDisconnect(client net.ServerClient) {
 		return s.Client == client
 	})
 	if result == nil {
-		log.Println("Could not find the client")
+		s.l.LogWarning("Could not find the client")
 	} else {
 		s.netPlayers = result
 	}
@@ -67,7 +70,7 @@ func (s *ServerDelegator) Update() {
 		for _, p := range s.netPlayers {
 			pack := misc.CheckErrorRetVal[packet_interface.Packet](p.ReadPacket())
 			if pack != nil {
-				log.Printf("Got packet: %+v", pack)
+				s.l.LogDebugf("Got packet: %+v", pack)
 				noPackets = false
 				for _, cb := range s.subSystemsCallback[reflect.TypeOf(pack)] {
 					cb(p, s, pack)
