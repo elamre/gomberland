@@ -4,7 +4,8 @@ go 1.18
 
 require (
 	github.com/blizzy78/ebitenui v0.0.0-20211114161546-ca1a302d930b
-	github.com/elamre/go_helpers v0.0.2
+	github.com/elamre/debug_gui v0.0.0-20220420112516-e9315ad26b05
+	github.com/elamre/go_helpers v0.0.3
 	github.com/elamre/logger v1.0.0
 	github.com/elamre/tentsuyu v0.3.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
