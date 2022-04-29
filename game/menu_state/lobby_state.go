@@ -5,6 +5,7 @@ import (
 	"github.com/blizzy78/ebitenui/image"
 	"github.com/blizzy78/ebitenui/widget"
 	"github.com/elamre/gomberman/assets"
+	"github.com/elamre/gomberman/game/menu_state_revised"
 	"github.com/elamre/tentsuyu"
 	"golang.org/x/image/font"
 	"image/color"
@@ -18,7 +19,7 @@ type lobbyState struct {
 }
 
 func newlobbyState() *lobbyState {
-	m := lobbyState{curState: multiPlayerMenuState}
+	m := lobbyState{curState: menu_state_revised.multiPlayerMenuState}
 	buttonAsset := assets.GetManager().AssetMap[assets.GenericButtonAsset].(*widget.ButtonImage)
 	fontAsset := assets.GetManager().AssetMap[assets.GenericButtonFont].(font.Face)
 	widgetOptions := widget.ButtonOpts.WidgetOpts(
@@ -82,7 +83,7 @@ func newlobbyState() *lobbyState {
 		}),
 		padding,
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			m.curState = singlePlayerMenuState
+			m.curState = menu_state_revised.singlePlayerMenuState
 		}),
 	)
 	multiplayer := widget.NewButton(
@@ -93,7 +94,7 @@ func newlobbyState() *lobbyState {
 		}),
 		padding,
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			m.curState = multiPlayerMenuState
+			m.curState = menu_state_revised.multiPlayerMenuState
 		}),
 	)
 	options := widget.NewButton(
@@ -104,7 +105,7 @@ func newlobbyState() *lobbyState {
 		}),
 		padding,
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			m.curState = optionsMenuState
+			m.curState = menu_state_revised.optionsMenuState
 		}),
 	)
 	exit := widget.NewButton(
@@ -115,7 +116,7 @@ func newlobbyState() *lobbyState {
 		}),
 		padding,
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			m.curState = BackState
+			m.curState = menu_state_revised.BackState
 		}),
 	)
 	t := widget.NewTextInput(append(
